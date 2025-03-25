@@ -1,33 +1,34 @@
-name: Generate .env from PUBLIC_IP
+name: Update .env from PUBLIC_IP
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_dispatch:  # puedes ejecutarlo manualmente
+  repository_dispatch:  # se activa desde fuera (ej: Terraform)
 
 permissions:
-  contents: write  # 👈 Esto permite hacer commit/push
+  contents: write
 
 jobs:
-  generate-env:
+  update-env:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Generate .env from template using PUBLIC_IP
+      - name: Generate .env from template
         run: |
-          echo "Usando PUBLIC_IP: ${{ vars.PUBLIC_IP }}"
+          echo "Generando .env con IP ${{ vars.PUBLIC_IP }}"
           sed "s/{{PUBLIC_IP}}/${{ vars.PUBLIC_IP }}/g" .env.template > .env
 
-      - name: Commit and push .env file
+      - name: Commit and push .env if it changed
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .env
-          git commit -m "Update .env with PUBLIC_IP ${{ vars.PUBLIC_IP }}"
-          git push origin HEAD
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # ya lo usa internamente checkout@v4
+          if git diff --cached --quiet; then
+            echo "No hay cambios en .env"
+          else
+            git commit -m "Actualiza .env con nueva PUBLIC_IP ${{ vars.PUBLIC_IP }}"
+            git push
+          fi
+

@@ -1,0 +1,28 @@
+name: Generate .env from PUBLIC_IP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Permite ejecutarlo manualmente desde la UI
+
+jobs:
+  generate-env:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate .env from template using PUBLIC_IP
+        run: |
+          echo "Usando PUBLIC_IP: ${{ vars.PUBLIC_IP }}"
+          sed "s/{{PUBLIC_IP}}/${{ vars.PUBLIC_IP }}/g" .env.template > .env
+
+      - name: Commit and push .env file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .env
+          git commit -m "Update .env with PUBLIC_IP ${{ vars.PUBLIC_IP }}"
+          git push
